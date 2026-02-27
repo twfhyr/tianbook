@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Tianbook</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="logo">Tianbook</a>
+      <nav>
+        <a href="index.html">Home</a>
+        <a href="blog.html">Blog</a>
+        <a href="about.html">About</a>
+        <a href="admin.html" class="active">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Login Screen -->
+    <section class="admin-section" id="login-section">
+      <div class="container">
+        <div class="admin-card">
+          <h1>Admin Login</h1>
+          <p class="admin-desc">Connect your GitHub account to publish new posts. Only the repository owner (<strong>twfhyr</strong>) can publish.</p>
+          <div class="login-form">
+            <label for="gh-token">GitHub Personal Access Token</label>
+            <p class="help-text">Create a token at <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens</a> with <strong>repo</strong> scope.</p>
+            <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxx">
+            <button id="login-btn" class="btn btn-primary">Connect to GitHub</button>
+            <p id="login-error" class="error-msg"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Editor Screen -->
+    <section class="admin-section" id="editor-section" style="display:none;">
+      <div class="container">
+        <div class="editor-header">
+          <h1>New Post</h1>
+          <div class="user-info">
+            <img id="user-avatar" src="" alt="avatar" class="avatar">
+            <span id="user-name"></span>
+            <button id="logout-btn" class="btn btn-small">Logout</button>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="form-group">
+            <label for="post-title">Title</label>
+            <input type="text" id="post-title" placeholder="My awesome post">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="post-tags">Tags</label>
+              <input type="text" id="post-tags" placeholder="tech, web (comma separated)">
+            </div>
+            <div class="form-group">
+              <label for="post-date">Date</label>
+              <input type="date" id="post-date">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="post-excerpt">Excerpt</label>
+            <input type="text" id="post-excerpt" placeholder="A short summary of the post">
+          </div>
+
+          <div class="form-group">
+            <label for="post-body">Body <span class="help-text-inline">(HTML supported)</span></label>
+            <div class="toolbar">
+              <button type="button" data-wrap="<strong>" data-wrap-end="</strong>" title="Bold">B</button>
+              <button type="button" data-wrap="<em>" data-wrap-end="</em>" title="Italic"><em>I</em></button>
+              <button type="button" data-insert="<h2></h2>" title="Heading">H2</button>
+              <button type="button" data-insert="<p></p>" title="Paragraph">P</button>
+              <button type="button" data-insert="<ul>\n  <li></li>\n</ul>" title="List">UL</button>
+              <button type="button" data-insert="<blockquote></blockquote>" title="Quote">BQ</button>
+              <button type="button" data-insert="<code></code>" title="Inline Code">Code</button>
+            </div>
+            <textarea id="post-body" rows="16" placeholder="<p>Write your post content here...</p>"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button id="preview-btn" class="btn">Preview</button>
+            <button id="publish-btn" class="btn btn-primary">Publish</button>
+          </div>
+
+          <p id="publish-status" class="status-msg"></p>
+        </div>
+
+        <!-- Preview -->
+        <div class="admin-card" id="preview-card" style="display:none;">
+          <h2>Preview</h2>
+          <hr>
+          <div id="preview-content" class="post-body"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>&copy; 2026 Tianbook. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
