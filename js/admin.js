@@ -12,6 +12,7 @@ const loginError = document.getElementById("login-error");
 const logoutBtn = document.getElementById("logout-btn");
 const userAvatar = document.getElementById("user-avatar");
 const userName = document.getElementById("user-name");
+const editorTitle = document.getElementById("editor-title");
 const postTitle = document.getElementById("post-title");
 const postTags = document.getElementById("post-tags");
 const postDate = document.getElementById("post-date");
@@ -19,11 +20,16 @@ const postExcerpt = document.getElementById("post-excerpt");
 const postBody = document.getElementById("post-body");
 const previewBtn = document.getElementById("preview-btn");
 const publishBtn = document.getElementById("publish-btn");
+const deleteBtn = document.getElementById("delete-btn");
+const cancelEditBtn = document.getElementById("cancel-edit-btn");
+const newPostBtn = document.getElementById("new-post-btn");
 const publishStatus = document.getElementById("publish-status");
 const previewCard = document.getElementById("preview-card");
 const previewContent = document.getElementById("preview-content");
+const postsList = document.getElementById("posts-list");
 
 let ghToken = "";
+let editingPostId = null; // null = new post, string = editing existing
 
 // Set default date to today
 postDate.value = new Date().toISOString().split("T")[0];
@@ -67,6 +73,8 @@ loginBtn.addEventListener("click", async () => {
     userName.textContent = user.login;
     loginSection.style.display = "none";
     editorSection.style.display = "block";
+
+    loadPostsList();
   } catch (err) {
     ghToken = "";
     loginError.textContent = err.message;
@@ -81,6 +89,98 @@ logoutBtn.addEventListener("click", () => {
   tokenInput.value = "";
   editorSection.style.display = "none";
   loginSection.style.display = "block";
+  resetEditor();
+});
+
+// --- Posts List ---
+
+async function loadPostsList() {
+  postsList.innerHTML = '<p class="text-muted">Loading posts...</p>';
+
+  try {
+    const fileRes = await ghFetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`
+    );
+
+    if (!fileRes.ok) {
+      postsList.innerHTML = '<p class="text-muted">No posts yet.</p>';
+      return;
+    }
+
+    const fileData = await fileRes.json();
+    const decoded = decodeURIComponent(escape(atob(fileData.content)));
+    const posts = JSON.parse(decoded);
+
+    if (posts.length === 0) {
+      postsList.innerHTML = '<p class="text-muted">No posts yet.</p>';
+      return;
+    }
+
+    postsList.innerHTML = posts
+      .map(
+        (post) => `
+        <div class="post-item" data-id="${post.id}">
+          <div class="post-item-info">
+            <div class="post-item-title">${post.title}</div>
+            <div class="post-item-meta">${post.date} · ${post.tags.join(", ")}</div>
+          </div>
+          <span class="post-item-edit">Edit</span>
+        </div>
+      `
+      )
+      .join("");
+
+    // Attach click handlers
+    postsList.querySelectorAll(".post-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const id = item.getAttribute("data-id");
+        const post = posts.find((p) => p.id === id);
+        if (post) startEditing(post);
+      });
+    });
+  } catch (err) {
+    postsList.innerHTML = '<p class="text-muted">Failed to load posts.</p>';
+  }
+}
+
+function startEditing(post) {
+  editingPostId = post.id;
+  editorTitle.textContent = "Edit Post";
+  postTitle.value = post.title;
+  postTags.value = post.tags.join(", ");
+  postDate.value = post.date;
+  postExcerpt.value = post.excerpt;
+  postBody.value = post.body;
+  publishBtn.textContent = "Update";
+  deleteBtn.style.display = "inline-block";
+  cancelEditBtn.style.display = "inline-block";
+  previewCard.style.display = "none";
+  previewBtn.textContent = "Preview";
+  setStatus("", "");
+}
+
+function resetEditor() {
+  editingPostId = null;
+  editorTitle.textContent = "New Post";
+  postTitle.value = "";
+  postTags.value = "";
+  postDate.value = new Date().toISOString().split("T")[0];
+  postExcerpt.value = "";
+  postBody.value = "";
+  publishBtn.textContent = "Publish";
+  deleteBtn.style.display = "none";
+  cancelEditBtn.style.display = "none";
+  previewCard.style.display = "none";
+  previewBtn.textContent = "Preview";
+  setStatus("", "");
+}
+
+newPostBtn.addEventListener("click", () => {
+  resetEditor();
+});
+
+cancelEditBtn.addEventListener("click", () => {
+  resetEditor();
 });
 
 // --- Toolbar ---
@@ -122,7 +222,7 @@ previewBtn.addEventListener("click", () => {
   }
 });
 
-// --- Publish ---
+// --- Publish / Update ---
 
 function generateId(title) {
   return title
@@ -132,7 +232,6 @@ function generateId(title) {
 }
 
 publishBtn.addEventListener("click", async () => {
-  // Validate
   const title = postTitle.value.trim();
   const body = postBody.value.trim();
   if (!title || !body) {
@@ -140,12 +239,12 @@ publishBtn.addEventListener("click", async () => {
     return;
   }
 
+  const isEditing = editingPostId !== null;
   publishBtn.disabled = true;
-  publishBtn.textContent = "Publishing...";
+  publishBtn.textContent = isEditing ? "Updating..." : "Publishing...";
   setStatus("Fetching current posts...", "");
 
   try {
-    // 1. Get current posts.json from the repo
     const fileRes = await ghFetch(
       `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`
     );
@@ -156,13 +255,12 @@ publishBtn.addEventListener("click", async () => {
     if (fileRes.ok) {
       const fileData = await fileRes.json();
       sha = fileData.sha;
-      const decoded = atob(fileData.content);
+      const decoded = decodeURIComponent(escape(atob(fileData.content)));
       posts = JSON.parse(decoded);
     }
 
-    // 2. Build new post
-    const newPost = {
-      id: generateId(title),
+    const postData = {
+      id: isEditing ? editingPostId : generateId(title),
       title: title,
       date: postDate.value,
       tags: postTags.value
@@ -173,16 +271,24 @@ publishBtn.addEventListener("click", async () => {
       body: body,
     };
 
-    // Add to beginning
-    posts.unshift(newPost);
+    if (isEditing) {
+      const idx = posts.findIndex((p) => p.id === editingPostId);
+      if (idx !== -1) {
+        posts[idx] = postData;
+      } else {
+        posts.unshift(postData);
+      }
+    } else {
+      posts.unshift(postData);
+    }
 
-    // 3. Push updated file to GitHub
-    setStatus("Publishing to GitHub...", "");
+    setStatus(isEditing ? "Updating on GitHub..." : "Publishing to GitHub...", "");
 
     const content = btoa(unescape(encodeURIComponent(JSON.stringify(posts, null, 2))));
+    const commitMsg = isEditing ? `Update post: ${title}` : `Add post: ${title}`;
 
     const putBody = {
-      message: `Add post: ${title}`,
+      message: commitMsg,
       content: content,
     };
     if (sha) putBody.sha = sha;
@@ -200,21 +306,75 @@ publishBtn.addEventListener("click", async () => {
       throw new Error(err.message || "Failed to publish");
     }
 
-    setStatus("Published successfully! Your post is now live.", "success");
+    setStatus(
+      isEditing
+        ? "Updated successfully!"
+        : "Published successfully! Your post is now live.",
+      "success"
+    );
 
-    // Reset form
-    postTitle.value = "";
-    postTags.value = "";
-    postExcerpt.value = "";
-    postBody.value = "";
-    postDate.value = new Date().toISOString().split("T")[0];
-    previewCard.style.display = "none";
-    previewBtn.textContent = "Preview";
+    resetEditor();
+    loadPostsList();
   } catch (err) {
     setStatus("Error: " + err.message, "error");
   } finally {
     publishBtn.disabled = false;
-    publishBtn.textContent = "Publish";
+    publishBtn.textContent = editingPostId !== null ? "Update" : "Publish";
+  }
+});
+
+// --- Delete ---
+
+deleteBtn.addEventListener("click", async () => {
+  if (!editingPostId) return;
+  if (!confirm("Are you sure you want to delete this post?")) return;
+
+  deleteBtn.disabled = true;
+  deleteBtn.textContent = "Deleting...";
+  setStatus("Deleting post...", "");
+
+  try {
+    const fileRes = await ghFetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`
+    );
+
+    if (!fileRes.ok) throw new Error("Failed to fetch posts");
+
+    const fileData = await fileRes.json();
+    const sha = fileData.sha;
+    const decoded = decodeURIComponent(escape(atob(fileData.content)));
+    let posts = JSON.parse(decoded);
+
+    const title = posts.find((p) => p.id === editingPostId)?.title || editingPostId;
+    posts = posts.filter((p) => p.id !== editingPostId);
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(posts, null, 2))));
+
+    const putRes = await ghFetch(
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          message: `Delete post: ${title}`,
+          content: content,
+          sha: sha,
+        }),
+      }
+    );
+
+    if (!putRes.ok) {
+      const err = await putRes.json();
+      throw new Error(err.message || "Failed to delete");
+    }
+
+    setStatus("Post deleted.", "success");
+    resetEditor();
+    loadPostsList();
+  } catch (err) {
+    setStatus("Error: " + err.message, "error");
+  } finally {
+    deleteBtn.disabled = false;
+    deleteBtn.textContent = "Delete";
   }
 });
 

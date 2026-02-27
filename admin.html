@@ -41,8 +41,17 @@
     <!-- Editor Screen -->
     <section class="admin-section" id="editor-section" style="display:none;">
       <div class="container">
+        <!-- Existing Posts List -->
+        <div class="admin-card" id="posts-list-card">
+          <div class="posts-list-header">
+            <h2>Posts</h2>
+            <button id="new-post-btn" class="btn btn-primary btn-small">+ New Post</button>
+          </div>
+          <div id="posts-list"><p class="text-muted">Loading posts...</p></div>
+        </div>
+
         <div class="editor-header">
-          <h1>New Post</h1>
+          <h1 id="editor-title">New Post</h1>
           <div class="user-info">
             <img id="user-avatar" src="" alt="avatar" class="avatar">
             <span id="user-name"></span>
@@ -87,8 +96,10 @@
           </div>
 
           <div class="form-actions">
+            <button id="cancel-edit-btn" class="btn" style="display:none;">Cancel</button>
             <button id="preview-btn" class="btn">Preview</button>
             <button id="publish-btn" class="btn btn-primary">Publish</button>
+            <button id="delete-btn" class="btn btn-danger" style="display:none;">Delete</button>
           </div>
 
           <p id="publish-status" class="status-msg"></p>
