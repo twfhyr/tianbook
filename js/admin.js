@@ -213,7 +213,8 @@ document.querySelectorAll(".toolbar button").forEach((btn) => {
 
 previewBtn.addEventListener("click", () => {
   if (previewCard.style.display === "none") {
-    previewContent.innerHTML = postBody.value || "<p><em>Nothing to preview.</em></p>";
+    const raw = postBody.value || "*Nothing to preview.*";
+    previewContent.innerHTML = typeof marked !== "undefined" ? marked.parse(raw) : raw;
     previewCard.style.display = "block";
     previewBtn.textContent = "Hide Preview";
   } else {

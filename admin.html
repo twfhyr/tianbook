@@ -82,17 +82,19 @@
           </div>
 
           <div class="form-group">
-            <label for="post-body">Body <span class="help-text-inline">(HTML supported)</span></label>
+            <label for="post-body">Body <span class="help-text-inline">(Markdown supported)</span></label>
             <div class="toolbar">
-              <button type="button" data-wrap="<strong>" data-wrap-end="</strong>" title="Bold">B</button>
-              <button type="button" data-wrap="<em>" data-wrap-end="</em>" title="Italic"><em>I</em></button>
-              <button type="button" data-insert="<h2></h2>" title="Heading">H2</button>
-              <button type="button" data-insert="<p></p>" title="Paragraph">P</button>
-              <button type="button" data-insert="<ul>\n  <li></li>\n</ul>" title="List">UL</button>
-              <button type="button" data-insert="<blockquote></blockquote>" title="Quote">BQ</button>
-              <button type="button" data-insert="<code></code>" title="Inline Code">Code</button>
+              <button type="button" data-wrap="**" data-wrap-end="**" title="Bold">B</button>
+              <button type="button" data-wrap="*" data-wrap-end="*" title="Italic"><em>I</em></button>
+              <button type="button" data-insert="## " title="Heading">H2</button>
+              <button type="button" data-insert="### " title="Heading 3">H3</button>
+              <button type="button" data-insert="- " title="List">UL</button>
+              <button type="button" data-insert="> " title="Quote">BQ</button>
+              <button type="button" data-wrap="`" data-wrap-end="`" title="Inline Code">Code</button>
+              <button type="button" data-insert="```\n\n```" title="Code Block">CB</button>
+              <button type="button" data-insert="[text](url)" title="Link">Link</button>
             </div>
-            <textarea id="post-body" rows="16" placeholder="<p>Write your post content here...</p>"></textarea>
+            <textarea id="post-body" rows="16" placeholder="Write your post content in Markdown..."></textarea>
           </div>
 
           <div class="form-actions">
@@ -121,6 +123,7 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="js/admin.js"></script>
 </body>
 </html>

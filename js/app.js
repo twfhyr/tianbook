@@ -14,6 +14,12 @@ function getPostIdFromURL() {
   return params.get("id");
 }
 
+function renderBody(body) {
+  // If body starts with an HTML tag, treat as HTML; otherwise render as Markdown
+  if (/^\s*<[a-z]/.test(body)) return body;
+  return typeof marked !== "undefined" ? marked.parse(body) : body;
+}
+
 function loadPosts() {
   const raw = `https://raw.githubusercontent.com/twfhyr/tianbook/main/data/posts.json?v=${Date.now()}`;
   return fetch(raw)
@@ -47,7 +53,7 @@ loadPosts().then(posts => {
       postContent.innerHTML = `
         <h1>${post.title}</h1>
         <div class="post-meta">${post.date} ${tags}</div>
-        <div class="post-body">${post.body}</div>
+        <div class="post-body">${renderBody(post.body)}</div>
       `;
     } else {
       postContent.innerHTML = "<h1>Post not found</h1><p>Sorry, that post doesn't exist.</p>";
