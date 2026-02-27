@@ -15,8 +15,10 @@ function getPostIdFromURL() {
 }
 
 function loadPosts() {
-  return fetch("data/posts.json")
+  const raw = `https://raw.githubusercontent.com/twfhyr/tianbook/main/data/posts.json?v=${Date.now()}`;
+  return fetch(raw)
     .then(res => res.json())
+    .catch(() => fetch("data/posts.json").then(res => res.json()))
     .catch(() => []);
 }
 
