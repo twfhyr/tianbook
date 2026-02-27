@@ -48,6 +48,36 @@ async function ghFetch(url, options = {}) {
   return res;
 }
 
+async function loginWithToken(token) {
+  ghToken = token;
+  const res = await ghFetch("https://api.github.com/user");
+  if (!res.ok) throw new Error("Invalid token");
+
+  const user = await res.json();
+  if (user.login.toLowerCase() !== REPO_OWNER.toLowerCase()) {
+    throw new Error(`Access denied. Only ${REPO_OWNER} can publish.`);
+  }
+
+  sessionStorage.setItem("gh-token", token);
+  userAvatar.src = user.avatar_url;
+  userName.textContent = user.login;
+  loginSection.style.display = "none";
+  editorSection.style.display = "block";
+  loadPostsList();
+}
+
+// Auto-login from saved token
+(async () => {
+  const saved = sessionStorage.getItem("gh-token");
+  if (saved) {
+    try {
+      await loginWithToken(saved);
+    } catch {
+      sessionStorage.removeItem("gh-token");
+    }
+  }
+})();
+
 loginBtn.addEventListener("click", async () => {
   const token = tokenInput.value.trim();
   if (!token) {
@@ -60,21 +90,7 @@ loginBtn.addEventListener("click", async () => {
   loginError.textContent = "";
 
   try {
-    ghToken = token;
-    const res = await ghFetch("https://api.github.com/user");
-    if (!res.ok) throw new Error("Invalid token");
-
-    const user = await res.json();
-    if (user.login.toLowerCase() !== REPO_OWNER.toLowerCase()) {
-      throw new Error(`Access denied. Only ${REPO_OWNER} can publish.`);
-    }
-
-    userAvatar.src = user.avatar_url;
-    userName.textContent = user.login;
-    loginSection.style.display = "none";
-    editorSection.style.display = "block";
-
-    loadPostsList();
+    await loginWithToken(token);
   } catch (err) {
     ghToken = "";
     loginError.textContent = err.message;
@@ -87,6 +103,7 @@ loginBtn.addEventListener("click", async () => {
 logoutBtn.addEventListener("click", () => {
   ghToken = "";
   tokenInput.value = "";
+  sessionStorage.removeItem("gh-token");
   editorSection.style.display = "none";
   loginSection.style.display = "block";
   resetEditor();
